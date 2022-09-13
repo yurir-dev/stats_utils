@@ -21,6 +21,9 @@ def normal_distribution_function(x, mean, std):
     # returns: type <class 'numpy.ndarray'>
     return values
 
+def validArea(area_range):
+    return area_range[0] < area_range[1]
+
 def main(argv):
    
     try:
@@ -65,7 +68,7 @@ def main(argv):
     y = normal_distribution_function(x, mean, std)
     plt.plot(x, y, color='red')
     
-    if area_range[0] != 0 and area_range[1] != 0:
+    if validArea(area_range):
         x1, x2 = area_range[0], area_range[1]
         ptx = np.linspace(x1, x2, 100)
         pty = normal_distribution_function(ptx, mean, std)

@@ -32,7 +32,7 @@ def main(argv):
       usage("Failed to parse argv")
       sys.exit(2)
     
-    a, b = 2, 2
+    a, b = 1,1
     area_range = [0, -1]
     desc = ""
     verbose = False
@@ -47,6 +47,8 @@ def main(argv):
                 a = int(arg)
             elif opt in ("-b", "--beta"):
                 b = int(arg)
+            elif opt in ("-d", "--desc"):
+                desc = arg
             elif opt in ("-r", "--area_range"):
                 rng = arg.split(':', 1)
                 area_range = [float(rng[0]), float(rng[1])]
@@ -70,24 +72,53 @@ def main(argv):
         print("x : {}".format(x))
         print("y : {}".format(y))
 
-    plt.plot(x, y, 'r-', lw=1, alpha=1.0)
+    #plt.plot(x, y, 'r-', lw=1, alpha=1.0)
+    fig, (axBeta, axCdf, axQuantil) = plt.subplots(3, 1)
+ 
+    axBeta.plot(x, y, 'r-', lw=1, alpha=1.0)
+    axBeta.grid()
 
+    y = beta(a, b).cdf(x)
+    axCdf.plot(x, y, 'r-', lw=1, alpha=1.0)
+    axCdf.title.set_text('cdf')
+    axCdf.set_title('cdf', y=0.5, x=0.95, pad=-14)
+    
+    x = np.linspace(0, 1, 100)
+    y = beta.ppf(x, a, b)
+    axQuantil.plot(x, y, 'r-', lw=1, alpha=1.0)
+    axQuantil.set_title('quantile', y=1.0, pad=-14)
+    
     #pdb.set_trace()
     if validArea(area_range): 
         x1, x2 = area_range[0], area_range[1]
         ptx = np.linspace(x1, x2, 100)
         pty = beta.pdf(ptx, a, b)
-        plt.fill_between(ptx, pty, color='#0b559f', alpha=1.0)
+        axBeta.fill_between(ptx, pty, color='#0b559f', alpha=1.0)
         
         betacdf = beta(a, b).cdf
         res = betacdf(x2) - betacdf(x1)
-        desc += " - {}".format(res) 
+        desc += " - {}".format(res)
         
         if verbose:
             print('Integration between {} and {} --> {}'.format(x1, x2, res))
-
-
-    plt.title(desc)
+        
+        x = np.linspace(beta.ppf(0.01, a, b), x1, 100)
+        yLow = [beta(a, b).cdf(x1) for _ in x]
+        axCdf.plot(x, yLow, 'b-', lw=1.5, alpha=1.0)
+        axCdf.vlines(x=x1, ymin=0, ymax=beta(a, b).cdf(x1), colors = 'blue')
+        
+        x = np.linspace(beta.ppf(0.01, a, b), x2, 100)
+        yHigh = [beta(a, b).cdf(x2) for _ in x]
+        axCdf.plot(x, yHigh, 'b-', lw=1, alpha=1.0)
+        axCdf.vlines(x=x2, ymin=0, ymax=beta(a, b).cdf(x2), colors = 'blue')
+   
+        axCdf.vlines(x=beta.ppf(0.01, a, b), ymin=beta(a, b).cdf(x1), ymax=beta(a, b).cdf(x2), colors = 'red', linestyles='dotted')
+        
+        #axCdf.fill_between(np.linspace(0, x1, 100), yLow, yHigh, color='#0b559f', alpha=1.0)
+    
+    axBeta.title.set_text(desc)
+    
+    #plt.title()
     plt.grid()
     plt.show()
  

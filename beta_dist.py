@@ -41,6 +41,7 @@ def main(argv):
     area_range = [0, -1]
     desc = ""
     verbose = False
+    percentile = 0
     for opt, arg in opts:
         try:
             if opt in ("-h", "--help"):

@@ -10,11 +10,13 @@ from scipy.integrate import quad
 from scipy.stats import beta
 import scipy.stats
 
+import utils
+
 def usage(desc = ""):
     print("")
     print(desc)
     print("Usage:")
-    print("{} --alpha <value> -beta <value> --area_range <value:value> --desc <string>".format(__file__))
+    print("{} --alpha <value> -beta <value> --area_range <value:value> --percentile <value> --desc <string>".format(__file__))
     print("")
 
 def beta_distribution_function(x, a, b):
@@ -24,10 +26,13 @@ def beta_distribution_function(x, a, b):
 def validArea(area_range):
     return area_range[0] < area_range[1]
 
+
+
+
 def main(argv):
    
     try:
-      opts, args = getopt.getopt(argv,"hva:b:r:d:",["help", "verbose", "alpha=","beta=", "area_range=", "desc="])
+      opts, args = getopt.getopt(argv,"hva:b:r:p:d:",["help", "verbose", "alpha=","beta=", "area_range=", "percentile=", "desc="])
     except getopt.GetoptError:
       usage("Failed to parse argv")
       sys.exit(2)
@@ -52,6 +57,10 @@ def main(argv):
             elif opt in ("-r", "--area_range"):
                 rng = arg.split(':', 1)
                 area_range = [float(rng[0]), float(rng[1])]
+            elif opt in ("-p", "--percentile"):
+                percentile = float(arg)
+                if percentile < 0 or percentile > 1.0:
+                    raise Exception("invalid percentile {} , should be in range (0, 1)".format(percentile))
             else:
                 usage("unexpected parameter: {} {}".format(opt, arg))
         except Exception as ex:
@@ -80,7 +89,6 @@ def main(argv):
 
     y = beta(a, b).cdf(x)
     axCdf.plot(x, y, 'r-', lw=1, alpha=1.0)
-    axCdf.title.set_text('cdf')
     axCdf.set_title('cdf', y=0.5, x=0.95, pad=-14)
     
     x = np.linspace(0, 1, 100)
@@ -88,6 +96,18 @@ def main(argv):
     axQuantil.plot(x, y, 'r-', lw=1, alpha=1.0)
     axQuantil.set_title('quantile', y=1.0, pad=-14)
     
+    if percentile > 0 :
+        x1 = (1.0 - percentile) / 2.0
+        x2 = 1.0 - x1
+        y1 = beta.ppf(x1, a, b)
+        y2 = beta.ppf(x2, a, b)
+        axQuantil.set_title('quantile {} - {:.3f}:{:.3f}'.format(percentile, y1, y2), y=1.0, pad=-14)
+        
+        utils.selectPoint(axQuantil, xmin=0, x=x1, ymin=0, y=y1)
+        utils.selectPoint(axQuantil, xmin=0, x=x2, ymin=0, y=y2)
+
+        area_range = [y1, y2]
+
     #pdb.set_trace()
     if validArea(area_range): 
         x1, x2 = area_range[0], area_range[1]
@@ -97,25 +117,15 @@ def main(argv):
         
         betacdf = beta(a, b).cdf
         res = betacdf(x2) - betacdf(x1)
-        desc += " - {}".format(res)
+        desc += " - [{:.3f},{:.3f}] = {}".format(x1, x2, res) 
         
         if verbose:
             print('Integration between {} and {} --> {}'.format(x1, x2, res))
         
-        x = np.linspace(beta.ppf(0.01, a, b), x1, 100)
-        yLow = [beta(a, b).cdf(x1) for _ in x]
-        axCdf.plot(x, yLow, 'b-', lw=1.5, alpha=1.0)
-        axCdf.vlines(x=x1, ymin=0, ymax=beta(a, b).cdf(x1), colors = 'blue')
-        
-        x = np.linspace(beta.ppf(0.01, a, b), x2, 100)
-        yHigh = [beta(a, b).cdf(x2) for _ in x]
-        axCdf.plot(x, yHigh, 'b-', lw=1, alpha=1.0)
-        axCdf.vlines(x=x2, ymin=0, ymax=beta(a, b).cdf(x2), colors = 'blue')
-   
-        axCdf.vlines(x=beta.ppf(0.01, a, b), ymin=beta(a, b).cdf(x1), ymax=beta(a, b).cdf(x2), colors = 'red', linestyles='dotted')
-        
-        #axCdf.fill_between(np.linspace(0, x1, 100), yLow, yHigh, color='#0b559f', alpha=1.0)
-    
+        xmin = beta.ppf(0.01, a, b)
+        utils.selectPoint(axCdf, xmin, x=x1, ymin=0, y=beta(a, b).cdf(x1))
+        utils.selectPoint(axCdf, xmin, x=x2, ymin=0, y=beta(a, b).cdf(x2))
+
     axBeta.title.set_text(desc)
     
     #plt.title()

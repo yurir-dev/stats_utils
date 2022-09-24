@@ -9,11 +9,13 @@ import math
 from scipy.integrate import quad
 import scipy.stats
 
+import utils
+
 def usage(desc):
     print("")
     print(desc)
     print("Usage:")
-    print("{} --mean <value> --std <value> --area_range <value:value> --desc <string>".format(__file__))
+    print("{} --mean <value> --std <value> --samples [value,value ...] --area_range <value:value> --percentile <value> --desc <string>".format(__file__))
     print("")
 
 def normal_distribution_function(x, mean, std):
@@ -74,8 +76,8 @@ def main(argv):
     
     fig, (axNrm, axCdf, axQuantil) = plt.subplots(3, 1)
     
-    x_min, x_max = mean -std * 6, mean + std * 6
-    x = np.linspace(x_min, x_max, 100)
+    xmin, xmax = scipy.stats.norm.ppf(0.01, loc=mean, scale=std), scipy.stats.norm.ppf(0.99, loc=mean, scale=std)
+    x = np.linspace(xmin, xmax, 100)
     y = normal_distribution_function(x, mean, std)
     axNrm.grid()
     axNrm.plot(x, y, color='red')
@@ -98,6 +100,9 @@ def main(argv):
         y2 = scipy.stats.norm.ppf(x2, loc=mean, scale=std)
         axQuantil.set_title('quantile {} - {:.3f}:{:.3f}'.format(percentile, y1, y2), y=1.0, pad=-14)
         
+        utils.selectPoint(axQuantil, xmin=0, x=x1, ymin=0, y=y1)
+        utils.selectPoint(axQuantil, xmin=0, x=x2, ymin=0, y=y2)
+
         area_range = [y1, y2]
     
     if validInterval(area_range):
@@ -112,19 +117,8 @@ def main(argv):
         if verbose:
             print('Integration between {} and {} --> {} , with absolute error {}'.format(x1, x2, res, err))
 
-        #pdb.set_trace()
-        #x = np.linspace(scipy.stats.norm.ppf(0.01, loc=mean, scale=std), x1, 2)
-        #yLow = [scipy.stats.norm.cdf(x1, loc=mean, scale=std) for _ in x]
-        #axCdf.plot(x, yLow, 'b-', lw=1.5, alpha=1.0)
-        #axCdf.vlines(x=x1, ymin=0, ymax=scipy.stats.norm.cdf(x1, loc=mean, scale=std), colors = 'blue')
-        
-        #x = np.linspace(scipy.stats.norm.ppf(0.01, loc=mean, scale=std), x2, 2)
-        #yHigh = [scipy.stats.norm.cdf(x2, loc=mean, scale=std) for _ in x]
-        #axCdf.plot(x, yHigh, 'b-', lw=1, alpha=1.0)
-        #axCdf.vlines(x=x2, ymin=0, ymax=scipy.stats.norm.cdf(x2, loc=mean, scale=std), colors = 'blue')
-        #
-        #axCdf.vlines(x=beta.ppf(0.01, a, b), ymin=beta(a, b).cdf(x1), ymax=beta(a, b).cdf(x2), colors = 'red', linestyles='dotted')
-
+        utils.selectPoint(axCdf, xmin=xmin, x=x1, ymin=0, y=scipy.stats.norm.cdf(x1, loc=mean, scale=std))
+        utils.selectPoint(axCdf, xmin=xmin, x=x2, ymin=0, y=scipy.stats.norm.cdf(x2, loc=mean, scale=std))
     
     axNrm.title.set_text(desc)
     
